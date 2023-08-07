@@ -2,7 +2,6 @@
 # pylint: disable=C0111,C0103,R0205
 import logging
 import time
-import json
 
 from .. import models
 
@@ -14,7 +13,7 @@ from pika.exchange_type import ExchangeType
 from ..config import settings
 from .base import BaseConsumer, BaseReconnectingConsumer
 
-from reenrolldb.database import  SessionLocal
+from reenrolldb.database import SessionLocal
 from reenrolldb.models import User, Environment
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
@@ -22,6 +21,7 @@ LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
 LOGGER = logging.getLogger(__name__)
 
 JSON_CONTENT_TYPE = 'application/json'
+
 
 class LxdEnvDatabaseConsumer(BaseConsumer):
     """
@@ -32,10 +32,9 @@ class LxdEnvDatabaseConsumer(BaseConsumer):
     QUEUE = 'lx.db-queue'
     ROUTING_KEY = 'lx.db'
 
-
     def __init__(self, parameters):
         super().__init__(parameters)
-        
+
         self.session = SessionLocal()
 
     def on_message(self, _unused_channel: pika_channel.Channel,
@@ -51,12 +50,12 @@ class LxdEnvDatabaseConsumer(BaseConsumer):
 
         """
         LOGGER.info('Received message from %s: %s',
-                    properties.reply_to, body)  
-        
+                    properties.reply_to, body)
+
         LOGGER.info(f'Received headers: {properties.headers}')
         try:
             headers = models.MessageHeaders.parse_obj(properties.headers)
-        
+
             if headers.x_type == 'environment-creation':
 
                 LOGGER.info('Parsing instance environment message')
@@ -66,27 +65,27 @@ class LxdEnvDatabaseConsumer(BaseConsumer):
 
                 LOGGER.info(f'Environment {env.id}')
 
-                #Find User
-                user = self.session.query(User).filter(User.id==env.user.id).first()
-                
+                # Find User
+                user = self.session.query(User).filter(User.id == env.user.id).first()
+
                 if user is not None:
                     LOGGER.info(f'Found user: ({user.id}:{user.username}) ')
 
-                #Find Env
+                # Find Env
 
                 LOGGER.info(f'Search for environment: ({env.id}) ')
-                db_env = self.session.query(Environment).filter(Environment.id==env.id).first()
+                db_env = self.session.query(Environment).filter(Environment.id == env.id).first()
 
                 if db_env is None:
-                    LOGGER.info(f'Creating new Environment: ({ env.id }) ')
+                    LOGGER.info(f'Creating new Environment: ({env.id}) ')
                     new_env = Environment()
                     new_env.id = env.id
                     new_env.user = user
-                    new_env.document = env.json()
+                    new_env.document = env.dict()
                     self.session.add(new_env)
                     self.session.commit()
                 else:
-                    db_env.document = env.json()
+                    db_env.document = env.dict()
                     self.session.add(db_env)
                     self.session.commit()
                     LOGGER.info(f'Environment already exists: ({env.id}) ')
@@ -105,7 +104,6 @@ class ReconnectingLxdEnvDatabaseConsumer(BaseReconnectingConsumer):
     def __init__(self, parameters):
         super().__init__(parameters)
         self._consumer = LxdEnvDatabaseConsumer(self._parameters)
-
 
     def _maybe_reconnect(self):
         if self._consumer.should_reconnect:
