@@ -1,0 +1,42 @@
+##### BEGIN - {{ env_id }} #####
+#template version: 1.1
+
+RewriteEngine On
+
+<Location /{{env_id}}/>
+  AuthType openid-connect
+  Require claim preferred_username:{{ username }}
+</Location>
+
+#noVNC
+ProxyPass /{{ env_id }}/novnc/        http://{{novnc_address}}/
+ProxyPassReverse /{{ env_id }}/novnc/ http://{{novnc_address}}/
+
+RewriteCond %{HTTP:Connection} Upgrade [NC]
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteRule /{{ env_id }}/novnc/(.*)  ws://{{novnc_address}}/$1 [P,L]
+
+RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+RewriteRule /{{ env_id }}/novnc/(.*)          http://{{novnc_address}}/$1 [P,L]
+
+#ttyd
+ProxyPass /{{ env_id }}/ttyd/             http://{{ ttyd_address }}/
+ProxyPassReverse /{{ env_id }}/ttyd/      http://{{ ttyd_address }}/
+
+RewriteCond %{HTTP:Upgrade} =websocket [NC]
+RewriteRule /{{ env_id }}/ttyd/(.*)           ws://{{ ttyd_address }}/$1 [P,L]
+
+RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+RewriteRule /{{ env_id }}/ttyd/(.*)           http://{{ ttyd_address }}/$1 [P,L]
+
+#vscode
+ProxyPass /{{ env_id }}/vscode/             http://{{ vscode_address }}/
+ProxyPassReverse /{{ env_id }}/vscode/      http://{{ vscode_address }}/
+
+RewriteCond %{HTTP:Upgrade} =websocket [NC]
+RewriteRule /{{ env_id }}/vscode/(.*)           ws://{{ vscode_address }}/$1 [P,L]
+
+RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+RewriteRule /{{ env_id }}/vscode/(.*)           http://{{ vscode_address }}/$1 [P,L]
+
+##### END - {{ env_id }} #####

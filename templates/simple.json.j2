@@ -1,0 +1,55 @@
+{
+    "name": "{{ name }}",
+    "type": "container",
+    "source": {
+        "type": "image",
+        "alias": "simple"
+    },
+    "config": {
+        "limits.cpu": "2",
+        "limits.memory": "8GB",
+        "security.nesting": "true",
+        "security.privileged": "true",
+        "environment.LX_ENV_ID": "{{ env_id }}",
+        "environment.LX_USER_ID": "{{ user_id }}",
+        "environment.LX_INSTANCE_ID": "{{ instance_id }}",
+        "environment.LX_COURSE": "{{ subject }}{{ catalog_number }}-{{ semester }}",
+        "environment.LX_USER": "{{ username }}",
+        "environment.LX_UID": "{{ uid_number }}"
+    },
+    "devices": {
+        "novnc": {
+            "type": "proxy",
+            "connect": "tcp:127.0.0.1:5801",
+            "listen": "tcp:{{host}}:{{ports[0]}}"
+        },
+        "ttyd": {
+            "type": "proxy",
+            "connect": "tcp:127.0.0.1:7681",
+            "listen": "tcp:{{host}}:{{ports[1]}}"
+        },
+        "vscode": {
+            "type": "proxy",
+            "connect": "tcp:127.0.0.1:3300",
+            "listen": "tcp:{{host}}:{{ports[2]}}"
+        }
+    },
+    "profiles": [
+        "default"
+    ],
+    "template": { 
+        "name": "simple",
+        "ports": 3,
+        "commands" : [
+            ["bash", "-c", "adduser --uid ${LX_UID} --disabled-password --gecos \"\" ${LX_USER}"],
+            ["bash", "-c", "systemctl enable tigervnc@${LX_USER}"],
+            ["bash", "-c", "systemctl enable novnc-websockify@$LX_USER"],
+            ["bash", "-c", "systemctl enable code-server@${LX_USER}"],
+            ["bash", "-c", "systemctl enable ttyd@${LX_USER}"],
+            ["bash", "-c", "systemctl start tigervnc@${LX_USER}"],
+            ["bash", "-c", "systemctl start novnc-websockify@$LX_USER"],
+            ["bash", "-c", "systemctl start code-server@${LX_USER}"],
+            ["bash", "-c", "systemctl start ttyd@${LX_USER}"]
+        ]
+    }
+}

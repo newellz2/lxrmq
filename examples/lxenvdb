@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+import logging
+import ssl
+import pika
+
+from lxrmq.config import settings
+from lxrmq.api import LxdApi
+from lxrmq.consumers import LxdEnvDatabaseConsumer
+
+
+LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
+              '-35s %(lineno) -5d: %(message)s')
+
+
+
+def main():
+
+    if settings.LOG_LEVEL == 'INFO':
+        logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+    elif settings.LOG_LEVEL == 'DEBUG':
+        logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
+
+    #SSL
+    context = ssl.create_default_context(cafile=settings.RMQ_CA_CERT)
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.check_hostname = True
+    context.load_cert_chain(settings.RMQ_CERT, settings.RMQ_KEY)
+
+    #PIKA
+    ssl_options = pika.SSLOptions(context, settings.RMQ_SSL_NAME)
+    credentials = pika.PlainCredentials(settings.RMQ_USERNAME, settings.RMQ_PASSWORD.get_secret_value())
+    parameters = pika.ConnectionParameters(
+        settings.RMQ_HOST,
+        settings.RMQ_HOST_PORT,
+        settings.RMQ_VHOST,
+        credentials=credentials,
+        ssl_options=ssl_options
+        )
+
+    consumer = LxdEnvDatabaseConsumer(parameters)
+    consumer.run()
+
+
+if __name__ == '__main__':
+    main()
