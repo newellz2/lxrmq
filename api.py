@@ -374,8 +374,15 @@ class LxdApi(object):
 
         instance: models.Instance = self.client.instances.get(message.instance)
 
-        if message.operation not in [OperationsEnum.restart, OperationsEnum.status]:
+        if message.operation not in [OperationsEnum.restart, OperationsEnum.status,
+                                     OperationsEnum.start, OperationsEnum.stop]:
             raise ValueError('Invalid operation')
+
+        if message.operation == OperationsEnum.start:
+            instance.start(wait=True)
+
+        if message.operation == OperationsEnum.stop:
+            instance.stop(wait=True)
 
         if message.operation == OperationsEnum.restart:
             instance.restart(wait=True)

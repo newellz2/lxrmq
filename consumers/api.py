@@ -26,7 +26,7 @@ class LxdApiConsumer(BaseConsumer):
     EXCHANGE_TYPE = ExchangeType.topic
     QUEUE = 'lx.api-queue'
     ROUTING_KEY = 'lx.api'
-    
+
     CREATE_ROUTING_KEY = 'lx.simple'
 
     def __init__(self, parameters, lxdapi):
@@ -46,7 +46,7 @@ class LxdApiConsumer(BaseConsumer):
         :param bytes body: The message body
 
         """
-  
+
         LOGGER.info('Received message # %s from %s:%s: %s',
                     properties.reply_to, properties.app_id, properties.user_id, body)
 
@@ -55,7 +55,7 @@ class LxdApiConsumer(BaseConsumer):
 
         #Check headers
         try:
-            headers = models.MessageHeaders.parse_obj(properties.headers)            
+            headers = models.MessageHeaders.parse_obj(properties.headers)
         except Exception as e:
             result = e
             LOGGER.info(f'Headers Exception: {e}, Type({type(e)})')
@@ -82,7 +82,7 @@ class LxdApiConsumer(BaseConsumer):
             except Exception as e:
                 LOGGER.info(f'Failed to create instance: {e}')
                 result = e
-                
+
         #Operation
         if headers.x_type == 'operation':
             LOGGER.info(f'Performing instance operation.')
@@ -119,7 +119,7 @@ class LxdApiConsumer(BaseConsumer):
         result = self._lxdapi.handle_operation_message(message, headers.x_user)
 
         LOGGER.info(f'Operation completed: {result}')
-        
+
         self.send_response(result, properties.reply_to, properties.correlation_id)
 
         return result
